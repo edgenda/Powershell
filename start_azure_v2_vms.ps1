@@ -29,7 +29,7 @@ PARAMETER AzureCredentialAssetName
    If this parameter is included, only VMs in the specified resource group will be stopped, otherwise all VMs in the subscription will be stopped.  
 
 .NOTES
-Based on the original script by
+   Based on the original "Stop Azure V2 VMs" script by
    AUTHOR: System Center Automation Team 
    LASTEDIT: January 7, 2016
 #>
