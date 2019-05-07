@@ -45,19 +45,13 @@ param (
     [String] $ResourceGroupName
 )
 
-# Returns strings with status messages
-[OutputType([String])]
+Disable-AzureRmContextAutosave –Scope Process
 
-$connectionName = "AzureRunAsConnection"
-$servicePrincipalConnection = Get-AutomationConnection -Name $connectionName
-"Logging into Azure..."
-$null = Add-AzureRmAccount `
-	-ServicePrincipal `
-	-TenantId $servicePrincipalConnection.TenantId `
-	-ApplicationId $servicePrincipalConnection.ApplicationId `
-	-CertificateThumbprint $servicePrincipalConnection.CertificateThumbprint `
-	-ErrorAction Stop `
-	-ErrorVariable err
+$connection = Get-AutomationConnection -Name AzureRunAsConnection
+Connect-AzureRmAccount -ServicePrincipal -Tenant $connection.TenantID `
+-ApplicationID $connection.ApplicationID -CertificateThumbprint $connection.CertificateThumbprint
+
+$AzureContext = Select-AzureRmSubscription -SubscriptionId $connection.SubscriptionID
 
 # Connect to Azure and select the subscription to work against
 #$Cred = Get-AutomationPSCredential -Name $AzureCredentialAssetName -ErrorAction Stop
@@ -67,17 +61,15 @@ if($err) {
 	throw $err
 }
 
-$SubId = Get-AutomationVariable -Name $AzureSubscriptionIdAssetName -ErrorAction Stop
-
 # If there is a specific resource group, then get all VMs in the resource group,
 # otherwise get all VMs in the subscription.
 if ($ResourceGroupName) 
 { 
-	$VMs = Get-AzureRmVM -ResourceGroupName $ResourceGroupName
+	$VMs = Get-AzureRmVM -ResourceGroupName $ResourceGroupName -AzureRmContext $AzureContext
 }
 else 
 { 
-	$VMs = Get-AzureRmVM
+	$VMs = Get-AzureRmVM -AzureRmContext $AzureContext
 }
 
 # Start each of the VMs
@@ -104,7 +96,7 @@ foreach ($VM in $VMs)
     {
         Write-Output ("Attempting to start " + $VM.Name)
 
-        $StartRtn = $VM | Start-AzureRmVM -ErrorAction Continue
+        $StartRtn = $VM | Start-AzureRmVM -ErrorAction Continue -AzureRmContext $AzureContext
 
         #   Write-Output ("Stop Status:")
         #   Write-Output ($StopRtn.StatusCode)
